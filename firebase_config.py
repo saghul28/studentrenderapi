@@ -1,6 +1,7 @@
 import pyrebase
+import os
 firebaseConfig = {
-  "apiKey": "AIzaSyAMav1FC8U-1iI7_zgjExy_D8KnNqjLH3c",
+  "apiKey": os.environ['FIREBASE_API_KEY'],
   "authDomain": "unnanban-5f098.firebaseapp.com",
   "databaseURL": "https://unnanban-5f098-default-rtdb.firebaseio.com",
   "projectId": "unnanban-5f098",
@@ -56,7 +57,7 @@ fireadmin = firebase_admin.initialize_app(cred)
 # firebase = pyrebase.initialize_app(firebaseConfig)
 
 # pyredb = firebase.database()
-
+#"AIzaSyAMav1FC8U-1iI7_zgjExy_D8KnNqjLH3c"
 # pyreFire = firebase.auth()
 
 # #firebase admin
