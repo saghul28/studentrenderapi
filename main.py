@@ -17,11 +17,6 @@ app.include_router(quiz_api.router,prefix="/interview", tags=["interview"])
 app.include_router(course_api.router,prefix="/course", tags=["course"])
 app.include_router(job_api.router,prefix="/job", tags=["job"])
 
-
-
-
-
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

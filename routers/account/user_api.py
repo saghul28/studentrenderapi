@@ -20,7 +20,7 @@ async def login(request: LoginRequest):
 
     try:
         # Sign in user with email and password
-        user =  pyreFire.sign_in_with_email_and_password(email, password) 
+        user =pyreFire.sign_in_with_email_and_password(email, password)
         
         # Get user info
         user_info = pyreFire.get_account_info(user['idToken'])
@@ -54,8 +54,6 @@ async def login(request: LoginRequest):
         error_message = error_json.get('error', {}).get('message', '')
         raise HTTPException(status_code=400, detail=error_message.lower())
     
-
-
 class SignUpRequest(BaseModel):
     first_name: str
     last_name: str

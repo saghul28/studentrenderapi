@@ -10,7 +10,7 @@ def scrape_linkedin_jobs(url: str, keyword: str, max_pages: int = 10) -> List[Di
 
     def linkedin_scraper(webpage, page_number, keyword):
         nonlocal job_details
-        next_page = f"{webpage}&start={page_number * 20}"
+        next_page = f"{webpage}&start={page_number * 10}"
         response = requests.get(str(next_page))
         
         soup = BeautifulSoup(response.content, 'html.parser')

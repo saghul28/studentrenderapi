@@ -30,8 +30,9 @@ async def get_random_quizzes(domain: str):
         
         # Store the correct answer in the correct_answers dictionary
         correct_answers[number] = answer
-   
+        print(correct_answers)
     return {"quizzes": quiz}
+
 
 class AnswerRequest(BaseModel):
    answers: List[str]
@@ -40,4 +41,10 @@ class AnswerRequest(BaseModel):
 async def check_answer(answers: AnswerRequest = Body(...)):
     marks = sum(answer in correct_answers.values() for answer in answers.answers)
     
-    return JSONResponse(status_code=status.HTTP_200_OK, content={"marks": marks,"correct_answer":correct_answers.values()})
+    # Convert dict_values object to list
+    correct_answers_list = list(correct_answers.values())
+    
+    return JSONResponse(
+        status_code=status.HTTP_200_OK, 
+        content={"marks": marks, "correct_answer": correct_answers_list}
+    )
