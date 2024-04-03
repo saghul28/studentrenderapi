@@ -4,12 +4,14 @@ from firebase_config import pyredb
 from fastapi.responses import JSONResponse
 from fastapi import FastAPI, HTTPException
 from googleapiclient.discovery import build
-import  os
+import os
+
 
 router = APIRouter()
 
 # Set up your YouTube Data API key and build the service
-YOUTUBE_API_KEY = "AIzaSyAMKpRCkbdvFvEfKXFyKb9G6sTKx5UwdeM"  # Replace with your own API key
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")  # Replace with your own API key
+print(YOUTUBE_API_KEY)
 youtube_service = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
 
 

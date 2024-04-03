@@ -1,8 +1,9 @@
 import pyrebase
 import os
 from dotenv import load_dotenv
+import base64
+load_dotenv(".env")
 
-load_dotenv()
 
 firebaseConfig = {
   "apiKey": os.getenv('API_KEY'),
@@ -19,14 +20,11 @@ firebase = pyrebase.initialize_app(firebaseConfig)
 pyredb = firebase.database()
 pyreFire = firebase.auth()
 
-
-
-#firebase admin
 admin_config = {
     "type": os.getenv("TYPE"),
     "project_id": os.getenv("PROJECT_ID"),
     "private_key_id": os.getenv("PRIVATE_KEY_ID"),
-    "private_key": os.getenv("PRIVATE_KEY"),
+    "private_key" : os.environ["PRIVATE_KEY"],
     "client_email": os.getenv("CLIENT_EMAIL"),
     "client_id": os.getenv("CLIENT_ID"),
     "auth_uri": os.getenv("AUTH_URI"),
@@ -36,6 +34,7 @@ admin_config = {
     "universe_domain": os.getenv("UNIVERSE_DOMAIN")
 }
 
+print(os.getenv("PRIVATE_KEY"))
 
 import firebase_admin
 from firebase_admin import credentials

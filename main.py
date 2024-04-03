@@ -8,9 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 
 app = FastAPI()
-
+ 
 # Include your routers here
-app.include_router(user_api.router, prefix="/user", tags=["user"])
+app.include_router( user_api.router, prefix="/user", tags=["user"])
 app.include_router(project_api.router, prefix="/project", tags=["project"])
 app.include_router(interview.router,prefix="/interview", tags=["interview"])
 app.include_router(quiz_api.router,prefix="/interview", tags=["interview"])
@@ -25,5 +25,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 @app.get("/")
-def hello():
-    return {"message":"hello world"}
+def hello(): 
+    return {"messa ge":"hello world"}
