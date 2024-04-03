@@ -11,7 +11,7 @@ router = APIRouter()
 
 # Set up your YouTube Data API key and build the service
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")  # Replace with your own API key
-print(YOUTUBE_API_KEY)
+
 youtube_service = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
 
 

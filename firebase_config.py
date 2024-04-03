@@ -34,7 +34,7 @@ admin_config = {
     "universe_domain": os.getenv("UNIVERSE_DOMAIN")
 }
 
-print(os.getenv("PRIVATE_KEY"))
+
 
 import firebase_admin
 from firebase_admin import credentials
