@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 import base64
 load_dotenv(".env")
 
-
 firebaseConfig = {
   "apiKey": os.getenv('API_KEY'),
   "authDomain": os.getenv("AUTH_DOMAIN"),
@@ -22,6 +21,7 @@ pyreFire = firebase.auth()
 
 admin_config = {
     "type": os.getenv("TYPE"),
+
     "project_id": os.getenv("PROJECT_ID"),
     "private_key_id": os.getenv("PRIVATE_KEY_ID"),
     "private_key" : os.environ["PRIVATE_KEY"],

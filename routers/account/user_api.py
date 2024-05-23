@@ -36,8 +36,10 @@ async def login(request: LoginRequest):
        
         # Get the first user
         first_user = user_info['users'][0]
-        
-        
+
+        username = first_user.get("displayName", None)
+        if not username:
+            raise HTTPException(status_code=400, detail="Username not found")
         
         # email_verified = first_user.get("emailVerified", False)
         
@@ -47,7 +49,7 @@ async def login(request: LoginRequest):
         #     raise HTTPException(status_code=400, detail="Verification link sent! Please verify your email")
         
         
-        return {"message":"logede in","token":id_Token},
+        return {"message":"logged in","token":id_Token, "username": username},
     
     except HTTPError as e:
         error_json = e.args[0].response.json()
@@ -55,8 +57,7 @@ async def login(request: LoginRequest):
         raise HTTPException(status_code=400, detail=error_message.lower())
     
 class SignUpRequest(BaseModel):
-    first_name: str
-    last_name: str
+    username:str
     email: str
     password: str
     phone_number:int
@@ -65,7 +66,10 @@ class SignUpRequest(BaseModel):
 async def signup(request: SignUpRequest):
     try:
         user = pyreFire.create_user_with_email_and_password(email=request.email, password=request.password)
-        idtoken = pyreFire.send_email_verification(user['idToken'])
+        id_token = user['idToken']
+        local_id = user['localId']
+        # idtoken = pyreFire.send_email_verification(user['id_token'])
+        pyreFire.update_profile(id_token,display_name=request.username)
         
     except HTTPError as e:
         error_json = e.args[0].response.json()
@@ -76,8 +80,7 @@ async def signup(request: SignUpRequest):
         raise HTTPException(status_code=400, detail=str(e))
     
     user_data = {
-        'first_name': request.first_name,
-        'last_name': request.last_name,
+        'username':request.username,
         'email': request.email,
         'phone_number': request.phone_number,
     }
