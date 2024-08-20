@@ -4,6 +4,7 @@ from routers.project import project_api
 from routers.Interview import interview,quiz_api
 from routers.course import course_api
 from routers.Jobs import job_api
+from routers.Blog import blog
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -15,6 +16,7 @@ app.include_router(interview.router,prefix="/interview", tags=["interview"])
 app.include_router(quiz_api.router,prefix="/interview", tags=["interview"])
 app.include_router(course_api.router,prefix="/course", tags=["course"])
 app.include_router(job_api.router,prefix="/job", tags=["job"])
+app.include_router(blog.router,prefix="/blog", tags=["blog"])
 
 
 app.add_middleware(
@@ -26,4 +28,4 @@ app.add_middleware(
 )
 @app.get("/")
 def hello(): 
-    return {"messa ge":"hello world"}
+    return {"message":"hello world"}
