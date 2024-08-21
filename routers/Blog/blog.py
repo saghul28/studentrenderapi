@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from firebase_admin import firestore
+import  datetime
 
 router = APIRouter()
 store = firestore.client()
@@ -15,7 +16,8 @@ async def create_post(post: Post):
     try:
         title = post.title
         content = post.content
-        author = "Anonymous"  # Set a default author if no user information is required
+        date = datetime.datetime.now()
+        author = "Admin"  # Set a default author if no user information is required
 
         data = {"title": title, "content": content, "author": author}
         post_id = store.collection("Blogs").document().id  # Auto-generate a blog ID

@@ -51,53 +51,53 @@ router = APIRouter()
 # store_quiz()
 
 
-@router.get("/question")
-async def get_question(domain: str = ''):
-    
-    get_details = pyredb.child("questions").child(domain).get()
-    question_data = get_details.val()
-    project_details = []
-
-    
-    try:
-        if question_data:
-           
-            for project_data in question_data:
-                # Access the title and description for each project
-                number= project_data.get('number','')
-                question = project_data.get('question', '')
-                answer = project_data.get('answer', '')
-                project_details.append({'number':number,'question': question, 'answer': answer})
-
-            return JSONResponse({ "data":project_details }, status_code=status.HTTP_200_OK)
-    except:
-        return JSONResponse("No projects found", status_code=status.HTTP_404_NOT_FOUND)
-    
- 
-@router.get('/quiz')
-async def get_quiz(domain: str ,current_user: str = Depends(validate_token)):
-   
-    get_details = pyredb.child("quiz").child(domain).get()
-    quiz_data = get_details.val()
-    
-    
-    quiz_details = []
-
-   
-    try:
-        if quiz_data:
-           
-            for project_data in quiz_data:
-               
-                number= project_data.get('number','')
-                question = project_data.get('question', '')
-                answer = project_data.get('answer', '')
-                options = project_data.get('options',[])
-                quiz_details.append({'number':number,'question': question,'options':options ,'answer': answer})
-
-            return quiz_details
-    except:
-        return JSONResponse("No projects found", status_code=status.HTTP_404_NOT_FOUND)
-    
+# @router.get("/question")
+# async def get_question(domain: str = ''):
+#
+#     get_details = pyredb.child("questions").child(domain).get()
+#     question_data = get_details.val()
+#     project_details = []
+#
+#
+#     try:
+#         if question_data:
+#
+#             for project_data in question_data:
+#                 # Access the title and description for each project
+#                 number= project_data.get('number','')
+#                 question = project_data.get('question', '')
+#                 answer = project_data.get('answer', '')
+#                 project_details.append({'number':number,'question': question, 'answer': answer})
+#
+#             return JSONResponse({ "data":project_details }, status_code=status.HTTP_200_OK)
+#     except:
+#         return JSONResponse("No projects found", status_code=status.HTTP_404_NOT_FOUND)
+#
+#
+# @router.get('/quiz')
+# async def get_quiz(domain: str ,current_user: str = Depends(validate_token)):
+#
+#     get_details = pyredb.child("quiz").child(domain).get()
+#     quiz_data = get_details.val()
+#
+#
+#     quiz_details = []
+#
+#
+#     try:
+#         if quiz_data:
+#
+#             for project_data in quiz_data:
+#
+#                 number= project_data.get('number','')
+#                 question = project_data.get('question', '')
+#                 answer = project_data.get('answer', '')
+#                 options = project_data.get('options',[])
+#                 quiz_details.append({'number':number,'question': question,'options':options ,'answer': answer})
+#
+#             return quiz_details
+#     except:
+#         return JSONResponse("No projects found", status_code=status.HTTP_404_NOT_FOUND)
+#
     
     
