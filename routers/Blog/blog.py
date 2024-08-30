@@ -1,28 +1,18 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from firebase_admin import firestore
-<<<<<<< HEAD
 import  datetime
-
-router = APIRouter()
-store = firestore.client()
-=======
 from firebase_config import firestoreDb
 import datetime
 
 router = APIRouter()
 store = firestoreDb
 
->>>>>>> 0cef162 (Initial commit)
 
 class Post(BaseModel):
     title: str
     content: str
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 0cef162 (Initial commit)
 # Create a blog post
 @router.post("/posts")
 async def create_post(post: Post):
@@ -41,10 +31,7 @@ async def create_post(post: Post):
     except Exception as e:
         return {"message": f"Error: {e}"}
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 0cef162 (Initial commit)
 # Get all blogs
 @router.get("/blogs")
 async def get_all_blogs():
@@ -59,10 +46,7 @@ async def get_all_blogs():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 0cef162 (Initial commit)
 # Get a blog by ID
 @router.get("/blogs/{id}")
 async def get_blog_by_id(id: str):
@@ -76,10 +60,7 @@ async def get_blog_by_id(id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 0cef162 (Initial commit)
 # Delete a blog by ID
 @router.delete("/blogs/{id}")
 async def delete_blog(id: str):
@@ -90,10 +71,7 @@ async def delete_blog(id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 0cef162 (Initial commit)
 # Update a blog post by ID
 @router.patch("/blogs/{id}")
 async def update_blog(post: Post, id: str):

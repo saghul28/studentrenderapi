@@ -1,14 +1,14 @@
-<<<<<<< HEAD
-from fastapi import FastAPI ,Depends,HTTPException,status
-from routers.account import user_api
-from routers.project import project_api
-from routers.Interview import interview,quiz_api
-from routers.course import course_api
-from routers.Jobs import job_api
-from routers.Blog import blog
-from routers.Interview import asssesment
-from fastapi.middleware.cors import CORSMiddleware
-=======
+
+# from fastapi import FastAPI ,Depends,HTTPException,status
+# from routers.account import user_api
+# from routers.project import project_api
+# from routers.Interview import interview,quiz_api
+# from routers.course import course_api
+# from routers.Jobs import job_api
+# from routers.Blog import blog
+# from routers.Interview import asssesment
+# from fastapi.middleware.cors import CORSMiddleware
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -20,7 +20,7 @@ from routers.account import user_api
 from routers.course import course_api
 from routers.project import project_api
 from routers.Report import reportgen
->>>>>>> 0cef162 (Initial commit)
+
 
 app = FastAPI()
 
@@ -33,10 +33,9 @@ app.include_router(asssesment.router,prefix="/interview", tags=["chatgpt"])
 app.include_router(course_api.router,prefix="/course", tags=["course"])
 app.include_router(job_api.router,prefix="/job", tags=["job"])
 app.include_router(blog.router,prefix="/blog", tags=["blog"])
-<<<<<<< HEAD
-=======
+
 app.include_router(reportgen.router,prefix="/report", tags=["Reports"])
->>>>>>> 0cef162 (Initial commit)
+
 
 
 app.add_middleware(

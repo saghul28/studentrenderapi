@@ -1,10 +1,9 @@
 import pyrebase
 import os
 from dotenv import load_dotenv
-<<<<<<< HEAD
-=======
+
 from firebase_admin import firestore
->>>>>>> 0cef162 (Initial commit)
+
 import base64
 load_dotenv(".env")
 
@@ -23,17 +22,9 @@ firebase = pyrebase.initialize_app(firebaseConfig)
 pyredb = firebase.database()
 pyreFire = firebase.auth()
 
-<<<<<<< HEAD
-admin_config = {
-    "type": os.getenv("TYPE"),
-
-=======
-
-
 
 admin_config = {
     "type": os.getenv("TYPE"),
->>>>>>> 0cef162 (Initial commit)
     "project_id": os.getenv("PROJECT_ID"),
     "private_key_id": os.getenv("PRIVATE_KEY_ID"),
     "private_key" : os.environ["PRIVATE_KEY"],
@@ -52,8 +43,6 @@ import firebase_admin
 from firebase_admin import credentials
 cred = credentials.Certificate(admin_config)
 fireadmin = firebase_admin.initialize_app(cred)
-<<<<<<< HEAD
-=======
 firestoreDb = firestore.client()
->>>>>>> 0cef162 (Initial commit)
+
 
