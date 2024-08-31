@@ -35,6 +35,7 @@ class AssessmentRequest(BaseModel):
 
 class SubmitAnswerRequest(BaseModel):
     selected_answer: str
+    # code_block:str
 
 
 
@@ -59,11 +60,13 @@ def generate_questions(topic: str):
 
     # Remove any empty entries or whitespace
     questions = [q.strip() for q in questions if q.strip()]
-
+    print(questions)
     return questions
 
 
 # Function to parse a single question
+import re
+
 def parse_questions(response_text: str):
     """Parses multiple questions from a response string."""
     questions = []
@@ -82,11 +85,11 @@ def parse_questions(response_text: str):
         code_block = ""
 
         # Check if there's a code block
-        if '```python' in question_str:
-            code_block_match = re.search(r'```python(.*?)```', question_str, re.DOTALL)
-            if code_block_match:
-                code_block = code_block_match.group(1).strip()
-                question_str = question_str.replace(code_block_match.group(0), '')
+        code_block_match = re.search(r'```(?:\w+)?\n(.*?)```', question_str, re.DOTALL)
+        if code_block_match:
+            code_block = code_block_match.group(1).strip()
+            # Remove the code block from the question string
+            question_str = re.sub(r'```(?:\w+)?\n(.*?)```', '', question_str, count=1, flags=re.DOTALL).strip()
 
         # Process remaining question text
         question_lines = question_str.split('\n')
@@ -112,18 +115,51 @@ def parse_questions(response_text: str):
             "correct_answer": correct_answer,
             "code_block": code_block
         })
+        print(questions)
 
     return questions
 
 
+
 # Function to assess answers using Gemini Flash
-def assess_answer(question: str, answer: str, code_block: str):
-    """Assesses the student's answer using Gemini Flash."""
-    prompt = f"Is the following answer correct for the question \"{question}{code_block}\":\n\n{answer}\n\n" \
-             "Please provide a reason if the answer is correct or incorrect. Keep it short and precise."
+# def assess_answer(question: str, answer: str):
+#     """Assesses the student's answer using Gemini Flash."""
+#     prompt = (
+#         f"Evaluate the following answer for the question: \"{question}\"\n\n"
+#         f"Answer: {answer}\n\n"
+#         "Respond with 'Correct' if the answer is correct, or 'Incorrect' if the answer is not correct. "
+#         "Please provide a brief explanation for your response."
+#     )
+#     chat = model.start_chat(history=[])
+#     response = chat.send_message(prompt)
+#     print(response)
+#     print(response.text)
+#     return response.text
+def assess_answer(question: str, selected_option: str, options: dict, correct_answer: str):
+    """Assesses the student's selected option for the question using Gemini Flash."""
+    # Ensure the option is upper-case
+    selected_option = selected_option.upper()
+
+    # Construct the prompt to evaluate the selected option
+    prompt = (
+        f"Evaluate the following multiple-choice question:\n\n"
+        f"Question: \"{question}\"\n\n"
+        f"Options:\n"
+        f"{', '.join([f'{k}) {v}' for k, v in options.items()])}\n\n"
+        f"Selected Option: {selected_option}\n\n"
+        f"Correct Answer: {correct_answer}\n\n"
+        "Respond with 'Correct' if the selected option is correct, or 'Incorrect' if it is not correct. "
+        "Provide a brief explanation for why the selected option is correct or incorrect based on the provided options and the correct answer."
+    )
+
+    # Start the chat and send the message
     chat = model.start_chat(history=[])
     response = chat.send_message(prompt)
-    return response.text
+
+    # Extract and return the text of the response
+    response_text = response.text.strip()
+
+    return response_text
 
 
 # API endpoint to start a new assessment
@@ -148,7 +184,7 @@ async def start_assessment(request: AssessmentRequest):
 
     # Assume there is at least one question in parsed_questions
     question_data = parsed_questions[0]
-
+    print(question_data)
     return question_data
 
 
@@ -166,11 +202,21 @@ async def submit_answer(request: SubmitAnswerRequest):
     parsed_questions = parse_questions(current_question_text)
     current_question = parsed_questions[0]
 
-    feedback = assess_answer(current_question['question'], request.selected_answer, request.code_block)
-    is_correct = "Correct" in feedback or "correct" in feedback
+    # feedback = assess_answer(current_question['question'], request.selected_answer)
+    feedback = assess_answer(
+        question=current_question['question'],
+        selected_option=request.selected_answer,
+        options=current_question['options'],
+        correct_answer=current_question['correct_answer']
+    )
+
+    # Interpret feedback
+    # is_correct = feedback.startswith("**Correct") or  feedback.startswith("**Correct")
+    is_correct = request.selected_answer.upper() == current_question['correct_answer']
 
     if is_correct:
         current_score += 1
+
 
     current_question_index += 1
 
@@ -185,8 +231,9 @@ async def submit_answer(request: SubmitAnswerRequest):
         "feedback": feedback,
         "is_correct": is_correct,
         "current_score": current_score,
-
+        "next_question": next_question
     }
+
 
 # API endpoint to get the next question
 @router.get("/next-question/", response_model=QuestionResponse)
@@ -200,7 +247,7 @@ async def next_question():
 
     # Parse the question
     parsed_questions = parse_questions(next_question_text)
-
+    print(parsed_questions)
     if not parsed_questions:
         raise HTTPException(status_code=500, detail="Failed to parse questions.")
 
