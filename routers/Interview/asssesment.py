@@ -1,257 +1,162 @@
-from fastapi import FastAPI, HTTPException, APIRouter
+from fastapi import FastAPI, HTTPException, Depends, APIRouter
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import os
 import google.generativeai as genai
 import re
-from dotenv import load_dotenv
 
-load_dotenv(".env")
-
-app = FastAPI()
 router = APIRouter()
 
-# Configure Google GenAI
-genai.configure(api_key=os.getenv("GENAI_API_KEY", os.getenv("GENAIAPI_KEY")))
+# Configure Google GenAI (Remember to set your API key as an environment variable)
+genai.configure(api_key=os.getenv("GENAIAPI_KEY"))
 
 # Choose the model
 model = genai.GenerativeModel('gemini-1.5-flash')
 
-# Global variables to manage session state
-questions_list = []
-current_question_index = 0
+# Global variables to store generated questions and score
+questions_list = {}
 current_score = 0
+current_question_index = {}
 
-# Data models
-class QuestionResponse(BaseModel):
-    question: str
-    options: dict
-    correct_answer: str
-    code_block: str = None
-
-
-class AssessmentRequest(BaseModel):
+# Models for request data
+class QuestionRequest(BaseModel):
     topic: str
 
-
-class SubmitAnswerRequest(BaseModel):
-    selected_answer: str
-    # code_block:str
-
-
-
-class AssessmentResponse(BaseModel):
-    feedback: str
-    is_correct: bool
-    current_score: int
-    next_question: QuestionResponse = None
+class AnswerRequest(BaseModel):
+    answer: str
+    topic: str  # Added topic to keep track of the session per topic
 
 
 # Function to generate multiple-choice questions
-def generate_questions(topic: str):
-    """Generates assessment questions for the given topic."""
-    prompt = f"Generate 10 multiple-choice questions related to {topic}. Provide 4 answer options for each question, with only one correct answer. Format each question as follows:\nQuestion: [Question text]\nOptions:\nA) [Option 1]\nB) [Option 2]\nC) [Option 3]\nD) [Option 4]\nCorrect Answer: [Letter of the correct answer (A, B, C, or D)]\n\nAfter the correct answer, end with '$$'"
+def generate_questions(topic):
+    """Generates assessment questions for the given topic using Gemini Flash."""
+    prompt = f"Generate 3 multiple-choice questions related to {topic}. " \
+             "Provide 4 answer options for each question, with only one correct answer. " \
+             "Format each question as follows:\n" \
+             "Question: [Question text]\n" \
+             "Options:\n" \
+             "A) [Option 1]\n" \
+             "B) [Option 2]\n" \
+             "C) [Option 3]\n" \
+             "D) [Option 4]\n" \
+             "Correct Answer: [Letter of the correct answer (A, B, C, or D)]\n\n" \
+             "After the correct answer, end with '$$'"
 
     chat = model.start_chat(history=[])
     response = chat.send_message(prompt)
-    questions_text = response.text
-
-    # Split the questions using '$$'
-    questions = questions_text.split('$$')
-
-    # Remove any empty entries or whitespace
-    questions = [q.strip() for q in questions if q.strip()]
-    print(questions)
+    questions = response.text.split("$$")
     return questions
 
+def parse_question(question_str):
+    """Parses a question string into question text, options, correct answer, and code block."""
+    # Initialize variables
+    question_text = ""
+    options = {}
+    correct_answer = ""
+    code_block = ""
 
-# Function to parse a single question
-import re
-
-def parse_questions(response_text: str):
-    """Parses multiple questions from a response string."""
-    questions = []
-    # Split the response by '$$' to get each question individually
-    question_strings = response_text.split('$$')
-
-    for question_str in question_strings:
-        question_str = question_str.strip()
-        if not question_str:
-            continue
-
-        # Initialize variables
-        question_text = ""
-        options = {}
-        correct_answer = ""
-        code_block = ""
-
-        # Check if there's a code block
-        code_block_match = re.search(r'```(?:\w+)?\n(.*?)```', question_str, re.DOTALL)
+    # Check if there's a code block
+    if '```python' in question_str:
+        code_block_match = re.search(r'```python(.*?)```', question_str, re.DOTALL)
         if code_block_match:
             code_block = code_block_match.group(1).strip()
-            # Remove the code block from the question string
-            question_str = re.sub(r'```(?:\w+)?\n(.*?)```', '', question_str, count=1, flags=re.DOTALL).strip()
+            question_str = question_str.replace(code_block_match.group(0), '')
 
-        # Process remaining question text
-        question_lines = question_str.split('\n')
-        question_text_found = False
-        for line in question_lines:
-            line = line.strip()
-            if line.startswith('**Question'):
-                question_text = line.split(':', 1)[1].strip()
-                question_text_found = True
-            elif line.startswith('A)') or line.startswith('B)') or line.startswith('C)') or line.startswith('D)'):
-                letter = line[0]
-                option = line[2:].strip()
-                options[letter] = option
-            elif line.startswith('Correct Answer:'):
-                correct_answer = line.split('Correct Answer:', 1)[1].strip()
+    # Process remaining question text
+    question_lines = question_str.split('\n')
+    print(question_lines)
+    for line in question_lines:
+        line = line.strip()
+        if line.startswith('**Question:'):
+            question_text = line.split(':', 1)[1].strip()
+            print(question_text)
+        elif line.startswith('Options'):
+            continue  # Skip 'Options' header line
+        elif line.startswith('A)') or line.startswith('B)') or line.startswith('C)') or line.startswith('D)'):
+            letter = line[0]
+            option = line[2:].strip()
+            options[letter] = option
+        elif line.startswith('**Correct Answer'):
+            correct_answer = line.split(':** ', 1)[1].strip()
 
-        if not question_text_found:
-            question_text = "No question text found"
-
-        questions.append({
-            "question": question_text,
-            "options": options,
-            "correct_answer": correct_answer,
-            "code_block": code_block
-        })
-        print(questions)
-
-    return questions
-
-
+    return question_text, options, correct_answer, code_block
 
 # Function to assess answers using Gemini Flash
-# def assess_answer(question: str, answer: str):
-#     """Assesses the student's answer using Gemini Flash."""
-#     prompt = (
-#         f"Evaluate the following answer for the question: \"{question}\"\n\n"
-#         f"Answer: {answer}\n\n"
-#         "Respond with 'Correct' if the answer is correct, or 'Incorrect' if the answer is not correct. "
-#         "Please provide a brief explanation for your response."
-#     )
-#     chat = model.start_chat(history=[])
-#     response = chat.send_message(prompt)
-#     print(response)
-#     print(response.text)
-#     return response.text
-def assess_answer(question: str, selected_option: str, options: dict, correct_answer: str):
-    """Assesses the student's selected option for the question using Gemini Flash."""
-    # Ensure the option is upper-case
-    selected_option = selected_option.upper()
+def assess_answer(answer, question, code_block):
+    """Assesses the student's answer using Gemini Flash."""
+    if not question:
+        return "Error: Question context is missing."
 
-    # Construct the prompt to evaluate the selected option
-    prompt = (
-        f"Evaluate the following multiple-choice question:\n\n"
-        f"Question: \"{question}\"\n\n"
-        f"Options:\n"
-        f"{', '.join([f'{k}) {v}' for k, v in options.items()])}\n\n"
-        f"Selected Option: {selected_option}\n\n"
-        f"Correct Answer: {correct_answer}\n\n"
-        "Respond with 'Correct' if the selected option is correct, or 'Incorrect' if it is not correct. "
-        "Provide a brief explanation for why the selected option is correct or incorrect based on the provided options and the correct answer."
-    )
-
-    # Start the chat and send the message
+    prompt = f"Is the following answer correct for the question \"{question}{code_block}\":\n\n{answer}\n\n" \
+             "Please provide a reason if the answer is correct or incorrect. Keep it short and precise."
     chat = model.start_chat(history=[])
     response = chat.send_message(prompt)
+    return response.text
 
-    # Extract and return the text of the response
-    response_text = response.text.strip()
+# Endpoint to generate questions for a topic
+@router.post('/api/generate_questions')
+async def api_generate_questions(request: QuestionRequest):
+    global questions_list, current_score, current_question_index
+    current_score = 0  # Reset score for a new session
+    topic = request.topic
 
-    return response_text
+    if not topic:
+        raise HTTPException(status_code=400, detail="Topic is required")
 
+    questions = generate_questions(topic)
+    if not questions:
+        raise HTTPException(status_code=500, detail="Failed to generate questions")
 
-# API endpoint to start a new assessment
-@router.post("/start-assessment/", response_model=QuestionResponse)
-async def start_assessment(request: AssessmentRequest):
-    global questions_list, current_question_index, current_score
-    current_score = 0
-    current_question_index = 0
-    questions_list = generate_questions(request.topic)
+    questions_list[topic] = questions
+    current_question_index[topic] = 0  # Start from the first question
 
-    if not questions_list:
-        raise HTTPException(status_code=404, detail="No questions generated.")
+    return JSONResponse(content={"message": "Questions generated successfully.", "topic": topic})
 
-    # Get the first question
-    next_question_text = questions_list.pop(0)
+# Endpoint to get the next question
+@router.get('/api/next_question')
+async def api_next_question(topic: str):
+    global questions_list, current_question_index
 
-    # Parse the question
-    parsed_questions = parse_questions(next_question_text)
+    if topic not in questions_list or current_question_index.get(topic) is None:
+        raise HTTPException(status_code=400, detail="No questions available for the topic or generate questions first.")
 
-    if not parsed_questions:
-        raise HTTPException(status_code=500, detail="Failed to parse questions.")
+    if current_question_index[topic] >= len(questions_list[topic]):
+        return JSONResponse(content={"message": "No more questions available."})
 
-    # Assume there is at least one question in parsed_questions
-    question_data = parsed_questions[0]
-    print(question_data)
-    return question_data
+    question_text, options, correct_answer, code_block = parse_question(questions_list[topic][current_question_index[topic]])
+    
+    current_question_index[topic] += 1  # Move to the next question
 
+    return JSONResponse(content={
+        "question": question_text,
+        "options": options,
+        "code_block": code_block
+    })
 
-# API endpoint to submit an answer and get feedback
-@router.post("/submit-answer/", response_model=AssessmentResponse)
-async def submit_answer(request: SubmitAnswerRequest):
-    global current_question_index, current_score, questions_list
+# Endpoint to assess the user's answer and provide feedback
+@router.post('/api/assess_answer')
+async def api_assess_answer(answer_request: AnswerRequest):
+    global current_score
+    answer = answer_request.answer
+    topic = answer_request.topic
 
-    if current_question_index >= len(questions_list):
-        raise HTTPException(status_code=404, detail="No more questions.")
+    if not answer or not topic:
+        raise HTTPException(status_code=400, detail="Answer and topic are required")
 
-    current_question_text = questions_list[current_question_index]
+    if topic not in questions_list or current_question_index.get(topic) is None:
+        raise HTTPException(status_code=400, detail="No questions generated for the topic.")
 
-    # Parse the current question
-    parsed_questions = parse_questions(current_question_text)
-    current_question = parsed_questions[0]
+    # Assess the previous question's answer
+    question_index = current_question_index[topic] - 1
+    question_text, options, correct_answer, code_block = parse_question(questions_list[topic][question_index])
+    feedback = assess_answer(answer, question_text, code_block)
 
-    # feedback = assess_answer(current_question['question'], request.selected_answer)
-    feedback = assess_answer(
-        question=current_question['question'],
-        selected_option=request.selected_answer,
-        options=current_question['options'],
-        correct_answer=current_question['correct_answer']
-    )
-
-    # Interpret feedback
-    # is_correct = feedback.startswith("**Correct") or  feedback.startswith("**Correct")
-    is_correct = request.selected_answer.upper() == current_question['correct_answer']
-
+    is_correct = "Incorrect" not in feedback or "Incorrect" not in feedback.lower() or feedback.splitlines("**Incorrect")
     if is_correct:
         current_score += 1
 
-
-    current_question_index += 1
-
-    # Get the next question if available
-    next_question = None
-    if current_question_index < len(questions_list):
-        next_question_text = questions_list[current_question_index]
-        parsed_questions = parse_questions(next_question_text)
-        next_question = parsed_questions[0]
-
-    return {
+    return JSONResponse(content={
         "feedback": feedback,
         "is_correct": is_correct,
-        "current_score": current_score,
-        "next_question": next_question
-    }
-
-
-# API endpoint to get the next question
-@router.get("/next-question/", response_model=QuestionResponse)
-async def next_question():
-    global current_question_index, questions_list
-
-    if current_question_index >= len(questions_list):
-        raise HTTPException(status_code=404, detail="No more questions.")
-
-    next_question_text = questions_list[current_question_index]
-
-    # Parse the question
-    parsed_questions = parse_questions(next_question_text)
-    print(parsed_questions)
-    if not parsed_questions:
-        raise HTTPException(status_code=500, detail="Failed to parse questions.")
-
-    # Assume there is at least one question in parsed_questions
-    question_data = parsed_questions[0]
-
-    return question_data
+        "current_score": current_score
+    })
