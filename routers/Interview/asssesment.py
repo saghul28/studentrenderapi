@@ -94,7 +94,7 @@ def assess_answer(answer, question, code_block):
     return response.text
 
 # Endpoint to generate questions for a topic
-@router.post('/api/generate_questions')
+@router.post('/generate_questions')
 async def api_generate_questions(request: QuestionRequest):
     global questions_list, current_score, current_question_index
     current_score = 0  # Reset score for a new session
@@ -113,7 +113,7 @@ async def api_generate_questions(request: QuestionRequest):
     return JSONResponse(content={"message": "Questions generated successfully.", "topic": topic})
 
 # Endpoint to get the next question
-@router.get('/api/next_question')
+@router.get('/next_question')
 async def api_next_question(topic: str):
     global questions_list, current_question_index
 
@@ -134,7 +134,7 @@ async def api_next_question(topic: str):
     })
 
 # Endpoint to assess the user's answer and provide feedback
-@router.post('/api/assess_answer')
+@router.post('/assess_answer')
 async def api_assess_answer(answer_request: AnswerRequest):
     global current_score
     answer = answer_request.answer
