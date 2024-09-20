@@ -117,7 +117,9 @@ async def api_generate_questions(request: QuestionRequest):
         "first_question": {
             "question": question_text,
             "options": options,
-            "code_block": code_block
+            "code_block": code_block,
+            "length":len(questions_list[topic])
+            
         }
     })
 
