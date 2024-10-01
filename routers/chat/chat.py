@@ -37,11 +37,11 @@ def get_gpt_response(prompt: str, language: str):
     return response.choices[0].message.content.strip()
 
 
-# @router.post("/chat")
-# async def chat(message: str = Form(default="How To learn Coding"), language: str = Form(...)):
-#     # Get the GPT response based on the user's input and selected language
-#     response = get_gpt_response(message, language)
-#     return {"response": response}
+@router.post("/chat/ss")
+async def chat(message: str = Form(default="How To learn Coding"), language: str = Form(...)):
+    # Get the GPT response based on the user's input and selected language
+    response = get_gpt_response(message, language)
+    return {"response": response}
 
 
 @router.post("/chat")
