@@ -13,7 +13,7 @@ class ChatRequest(BaseModel):
 
 
 def get_gpt_response(prompt: str, language: str):
-    # Define the system message based on the language
+   
     if language == "english":
         system_prompt = "You are a helpful assistant that responds in English."
     elif language == "tamil":
