@@ -6,7 +6,7 @@ import os
 client = OpenAI(api_key=os.getenv("OPENAI_KEY"))
 
 router = APIRouter()
-# Request model
+
 class ChatRequest(BaseModel):
     message: str
     language: str
