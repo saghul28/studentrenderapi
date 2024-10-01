@@ -68,7 +68,7 @@ def parse_question(question_str):
         if line.startswith('**Question:'):
             question_text = line.split(':', 1)[1].strip()
         elif line.startswith('Options'):
-            continue  # Skip 'Options' header line
+            continue  
         elif line.startswith('A)') or line.startswith('B)') or line.startswith('C)') or line.startswith('D)'):
             letter = line[0]
             option = line[2:].strip()
