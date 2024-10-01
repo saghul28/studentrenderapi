@@ -54,7 +54,7 @@ def parse_question(question_str):
     correct_answer = ""
     code_block = ""
 
-    # Check if there's a code block
+  
     if '```' in question_str:
         code_block_match = re.search(r'```[a-zA-Z]*\n(.*?)```', question_str, re.DOTALL)
         if code_block_match:
