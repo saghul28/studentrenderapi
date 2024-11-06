@@ -13,6 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 # from fastapi.security import SessionMiddleware, Session
 from starlette.middleware.sessions import SessionMiddleware
+import uvicorn
 
 from routers.Blog import blog
 from routers.Interview import asssesment
@@ -56,3 +57,6 @@ app.add_middleware(
 @app.get("/")
 def hello(): 
     return {"message":"hello world"}
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

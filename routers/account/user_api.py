@@ -21,14 +21,14 @@ async def login(request: LoginRequest):
     try:
         # Sign in user with email and password
         user =pyreFire.sign_in_with_email_and_password(email, password)
-        
+       
         # Get user info
         user_info = pyreFire.get_account_info(user['idToken'])
         id_Token = user['idToken']
-        
-        user = auth.get_user_by_email(email)
+        print(user_info)
+        # user = auth.get_user_by_email(email)
        
-        # Check if user info exists
+       
         if not user_info.get('users'):
             raise HTTPException(status_code=400, detail="No user information found")
         
@@ -97,7 +97,7 @@ class PasswordResetRequest(BaseModel):
 @router.post("/password-reset")
 async def password_reset(request: PasswordResetRequest):
     email = request.email
-    
+     
     try:
         auth.get_user_by_email(email)
         pyreFire.send_password_reset_email(email)
