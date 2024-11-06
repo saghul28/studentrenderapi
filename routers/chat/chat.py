@@ -1,10 +1,10 @@
-from fastapi import FastAPI, Form,APIRouter
+from fastapi import  Form,APIRouter
 from pydantic import BaseModel
-from openai import OpenAI
+import google.generativeai as genai
 import os
 
-client = OpenAI(api_key=os.getenv("OPENAI_KEY"))
-
+client = genai.configure(api_key=os.getenv("GENAIAPI_KEY"))
+model = genai.GenerativeModel('gemini-1.5-flash')
 router = APIRouter()
 
 class ChatRequest(BaseModel):
@@ -26,15 +26,12 @@ def get_gpt_response(prompt: str, language: str):
             "You are a helpful assistant that responds in colloquial Tamil but using English letters. Don't use Tamil script."
         )
 
-
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt}
-        ]
-    )
-    return response.choices[0].message.content.strip()
+    chat = model.start_chat(history=[],system_prompt=system_prompt)
+    response = chat.send_message(prompt)
+    
+    return response.text
+    
+   
 
 
 @router.post("/chat/ss")
