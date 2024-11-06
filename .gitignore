@@ -1,9 +1,4 @@
 .vercel
 .env
 .venv
-<<<<<<< HEAD
 venv/
-
-=======
-venv/
->>>>>>> parent of 7719ae6 (Initial commit with FastAPI project)
