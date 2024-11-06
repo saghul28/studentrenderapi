@@ -2,4 +2,4 @@
 .env
 .venv
 venv/
-firebase_serice_account.json
+firebase_service_account.json
