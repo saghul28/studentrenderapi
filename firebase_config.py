@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import json
 from firebase_admin import firestore, credentials, initialize_app
 
+
 # Load environment variables
 load_dotenv(".env")
 
