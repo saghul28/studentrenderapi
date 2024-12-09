@@ -2,8 +2,9 @@ import pyrebase
 import os
 from dotenv import load_dotenv
 import json
-from firebase_admin import firestore, credentials, initialize_app
-
+import firebase_admin
+from firebase_admin import credentials, firestore
+from firebase_admin.exceptions import FirebaseError
 
 # Load environment variables
 load_dotenv(".env")
@@ -26,8 +27,16 @@ pyredb = firebase.database()
 pyreFire = firebase.auth()
 
 
+# Firebase Admin SDK Configuration for Firestore
 
-# Convert the configuration to JSON-compatible format if necessary
-cred = credentials.Certificate(json.loads(os.getenv("FIREBASE_SERVICE_KEY")))
-fireadmin = initialize_app(cred)
+cred = credentials.Certificate("D:/studentapi/firebase_service_account.json")
+firebase_admin.initialize_app(cred)
+
+# Confirm Firebase Admin SDK initialization
+app = firebase_admin.get_app()
+print(f"Firebase Admin SDK initialized: {app.name}")
+
+# Initialize Firestore client
 firestoreDb = firestore.client()
+print("Firestore client initialized successfully.")
+

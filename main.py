@@ -24,6 +24,7 @@ from routers.account import user_api
 from routers.course import course_api
 from routers.project import project_api
 from routers.chat import chat
+from routers.ProjectGuidance import project_abstract
 
 
 
@@ -42,7 +43,7 @@ app.include_router(job_api.router,prefix="/job", tags=["Job"])
 app.include_router(blog.router,prefix="/blog", tags=["Blog"])
 app.include_router(reportgen.router,prefix="/report", tags=["Reports"])
 app.include_router(chat.router,prefix="/chat", tags=["Chat"])
-
+app.include_router(project_abstract.router,prefix="/projectguidance",tags=['Project Guidance'])
 # app.include_router(abs)
 
 
