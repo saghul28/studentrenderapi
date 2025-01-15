@@ -1,7 +1,8 @@
 from fastapi import APIRouter,Form
 from pydantic import BaseModel
 from docx import Document
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse,StreamingResponse
+import io
 import google.generativeai as genai
 import os
 from dotenv import load_dotenv
@@ -9,80 +10,91 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def mygemai(prompt):
-    client =  genai.configure(api_key=os.getenv("GENAIAPI_KEY"))
-    model =   genai.GenerativeModel('gemini-1.5-flash')
-    chat = model.start_chat()
-    response = chat.send_message(prompt)
-    final_response = response.text.replace("#","").replace("*","")
-    return final_response
+    try:
+        client =genai.configure(api_key=os.getenv("GENAIAPI_KEY"))
+        model =genai.GenerativeModel('gemini-1.5-flash')
+        chat = model.start_chat()
+        response = chat.send_message(prompt)
+        return response.text.replace("#", "").replace("*", "")
+    except Exception as e:
+        return f"Error in generating content: {str(e)}"
     
-
-
 router = APIRouter() 
 
+class StudentProjectDetails(BaseModel):
+    projectName:str
+    degree:str
+    department:str
+    projectDescription:str
+    frontend:str
+    backend:str
+    
 
-
-@router.post('/')
-def generatingAbstrct(projectName:str=Form(...),degree:str=Form(...),department:str=Form(...),projectDescription:str=Form(...),frontend:str=Form(...),backend:str=Form(...)):
-   
+@router.post('/abstract')
+async def generatingAbstrct(studentDetails: StudentProjectDetails):
     prompt = (
-    f"Create a comprehensive and detailed project abstract for a {degree} degree in {department}. "
-    f"The project is titled '{projectName}', and its goal is to {projectDescription}. The abstract should be "
-    f"divided into clearly defined sections, with a minimum of three pages of content. Each section should be "
-    f"thorough and elaborate to ensure a deep understanding of the project.\n\n"
-
-    f"1. **Introduction**:\n"
-    f"   - Start with an introduction to the project, including the problem being solved and its relevance to the field. "
-    f"   - Provide background information about the problem, its significance, and the motivation behind this project. "
-    f"   - Mention why this project is important, its potential impact, and its scope.\n\n"
-
-    f"2. **Project Details**:\n"
-    f"   - Describe the overall objectives and goals of the project. "
-    f"   - Provide a detailed breakdown of the methodologies used and the expected outcomes. "
-    f"   - Explain how this project is innovative or unique compared to similar projects. "
-    f"   - Include the key technologies involved in the project and how they contribute to achieving the project goals.\n\n"
-
-    f"3. **Frontend**:\n"
-    f"   - Describe the frontend technologies used, such as frameworks and libraries. "
-    f"   - Explain why these technologies were chosen for the project. "
-    f"   - Discuss how the frontend provides a user-friendly experience and supports the project's objectives. "
-    f"   - Highlight key features like responsiveness, interactivity, or accessibility.\n\n"
-
-    f"4. **Backend**:\n"
-    f"   - Detail the backend technologies used, including frameworks, databases, and server-side technologies. "
-    f"   - Discuss the reasons for choosing these technologies, focusing on scalability, performance, and security. "
-    f"   - Explain how the backend handles data processing, storage, and integration with the frontend.\n\n"
-
-    f"5. **System Recommendations**:\n"
-    f"   - Provide suggestions for improving the system in the future, such as enhancing performance, adding new features, "
-    f"     or improving security. "
-    f"   - Recommend strategies for scaling the project as usage increases, ensuring sustainability and reliability. "
-    f"   - Discuss potential areas for further research or development, including emerging technologies that could improve the system.\n\n"
-
-    f"Ensure that the abstract is structured, technical, and written in a professional tone. "
-    f"Make sure each section is detailed enough to fill at least one full page, focusing on providing a deep understanding "
-    f"of the project’s goals, technologies, and future directions."
+        f"Create a comprehensive and detailed project abstract for a {studentDetails.degree} degree in {studentDetails.department}. "
+        f"The project is titled '{studentDetails.projectName}', and its goal is to {studentDetails.projectDescription}. The abstract should be "
+        f"divided into clearly defined sections, with a minimum of three pages of content. Each section should be "
+        f"thorough and elaborate to ensure a deep understanding of the project.\n\n"
+        f"1. **Introduction**:\n"
+        f"   - Start with an introduction to the project, including the problem being solved and its relevance to the field. "
+        f"   - Provide background information about the problem, its significance, and the motivation behind this project. "
+        f"   - Mention why this project is important, its potential impact, and its scope.\n\n"
+        f"2. **Project Details**:\n"
+        f"   - Describe the overall objectives and goals of the project. "
+        f"   - Provide a detailed breakdown of the methodologies used and the expected outcomes. "
+        f"   - Explain how this project is innovative or unique compared to similar projects. "
+        f"   - Include the key technologies involved in the project and how they contribute to achieving the project goals.\n\n"
+        f"3. **Frontend**:\n"
+        f"   - Describe the {studentDetails.frontend} technologies used, such as frameworks and libraries. "
+        f"   - Explain why these technologies were chosen for the project. "
+        f"   - Discuss how the {studentDetails.frontend} provides a user-friendly experience and supports the project's objectives. "
+        f"   - Highlight key features like responsiveness, interactivity, or accessibility.\n\n"
+        f"4. **Backend**:\n"
+        f"   - Detail the backend technologies used, including frameworks, databases, and server-side technologies. "
+        f"   - Discuss the reasons for choosing these technologies, focusing on scalability, performance, and security. "
+        f"   - Explain how the {studentDetails.backend} handles data processing, storage, and integration with the {studentDetails.frontend}.\n\n"
+        f"5. **System Recommendations**:\n"
+        f"   - Provide suggestions for improving the system in the future, such as enhancing performance, adding new features, "
+        f"     or improving security. "
+        f"   - Recommend strategies for scaling the project as usage increases, ensuring sustainability and reliability. "
+        f"   - Discuss potential areas for further research or development, including emerging technologies that could improve the system.\n\n"
+        f"Ensure that the abstract is structured, technical, and written in a professional tone. "
+        f"Make sure each section is detailed enough to fill at least one full page, focusing on providing a deep understanding "
+        f"of the project’s goals, technologies, and future directions."
     )
     final_response = mygemai(prompt)
-    doc = Document()
-    doc.add_heading(f'Project Abstract:{projectName}',0)
-    doc.add_paragraph(final_response.replace("#","").replace("*",""))
-    
-    file_path = f"project_abstract_{projectName}.docx"
-    doc.save(file_path)
-    return FileResponse(file_path, media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document', filename=file_path)
 
+
+    doc = Document()
+    doc.add_heading(f'Project Abstract: {studentDetails.projectName}', level=0)
+    doc.add_paragraph(final_response)
+
+   
+    file_stream = io.BytesIO()
+    doc.save(file_stream)
+    file_stream.seek(0)
+
+  
+    return StreamingResponse(
+        file_stream,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": f"attachment; filename=project_abstract_{studentDetails.projectName}.docx"
+        },
+    )
 
 @router.post("/generate_projects_steps")
-def generateSteps(projectName:str=Form(...),degree:str=Form(...),department:str=Form(...),projectDescription:str=Form(...),frontend:str=Form(...),backend:str=Form(...)):
+def generateSteps(studentDetails:StudentProjectDetails):
     prompt = (
-    f"Create a detailed, step-by-step guide for a project titled '{projectName}', designed for a {degree} degree in {department}. "
-    f"The goal of the project is to {projectDescription}. The guide should be divided into clearly defined sections, with each step providing a detailed explanation of the process, technologies used, code structure, and challenges faced. "
+    f"Create a detailed, step-by-step guide for a project titled '{studentDetails.projectName}', designed for a {studentDetails.degree} degree in {studentDetails.department}. "
+    f"The goal of the project is to {studentDetails.projectDescription}. The guide should be divided into clearly defined sections, with each step providing a detailed explanation of the process, technologies used, code structure, and challenges faced. "
     f"The final document should be comprehensive, technical, and cover at least five pages.\n\n"
 
     f"1. **Introduction**:\n"
     f"   - Provide a brief overview of the project, its objectives, and the technologies that will be used. \n"
-    f"   - Describe the project scope and explain its relevance to the field of {department}.\n"
+    f"   - Describe the project scope and explain its relevance to the field of {studentDetails.department}.\n"
     f"   - Define the importance of each phase of the project.\n\n"
 
     f"2. **Planning Stage**:\n"
@@ -108,11 +120,11 @@ def generateSteps(projectName:str=Form(...),degree:str=Form(...),department:str=
     f"     - **Users table**: user_id (Primary Key), name, email, password\n"
     f"     - **Projects table**: project_id (Primary Key), user_id (Foreign Key), project_name, description\n"
     f"   - Provide examples of **initial code** that needs to be written. For example, creating a basic API with FastAPI, including a route for user registration, and integrating it with the database.\n"
-    f"   - Provide an overview of the development process for both the frontend and backend, explaining how technologies like {frontend} (e.g., React, Vue.js, Angular) and {backend} (e.g., Flask, FastAPI, Django) were integrated.\n"
+    f"   - Provide an overview of the development process for both the frontend and backend, explaining how technologies like {studentDetails.frontend} (e.g., React, Vue.js, Angular) and {studentDetails.backend} (e.g., Flask, FastAPI, Django) were integrated.\n"
     f"   - Discuss key features such as authentication, data processing, and any major challenges encountered during the development phase.\n"
     f"   - Software Declaration: Clearly mention all programming languages, frameworks, libraries, and tools used in development. For example:\n"
-    f"     - Frontend: {frontend}\n"
-    f"     - Backend: {backend}\n"
+    f"     - Frontend: {studentDetails.frontend}\n"
+    f"     - Backend: {studentDetails.backend}\n"
     f"     - Database: MySQL/PostgreSQL\n"
     f"     - Other Tools: Git, Docker, etc.\n\n"
 
@@ -145,18 +157,18 @@ def generateSteps(projectName:str=Form(...),degree:str=Form(...),department:str=
 
     final_response = mygemai(prompt)
     doc = Document()
-    doc.add_heading(f'Project Steps:{projectName}',0)
+    doc.add_heading(f'Project Steps:{studentDetails.projectName}',0)
     doc.add_paragraph(final_response.replace("#","").replace("*",""))
     
-    file_path = f"project_Steps_{projectName}.docx"
+    file_path = f"project_Steps_{studentDetails.projectName}.docx"
     doc.save(file_path)
     return FileResponse(file_path, media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document', filename=file_path)
 
 
 @router.post("/generate_report")
-def project_report(projectName:str=Form(...),degree:str=Form(...),department:str=Form(...),projectDescription:str=Form(...),frontend:str=Form(...),backend:str=Form(...)):
+def project_report(studentDetails:StudentProjectDetails):
     prompt = (
-    f"Generate a detailed report for the project titled '{projectName} and {projectDescription} "
+    f"Generate a detailed report for the project titled '{studentDetails.projectName} and {studentDetails.projectDescription} "
     f"for small and medium-sized enterprises (SMEs). The report should have the following structure:\n\n"
 
     f"**Index:**\n\n"
@@ -165,32 +177,32 @@ def project_report(projectName:str=Form(...),degree:str=Form(...),department:str
     f"   - Project Background\n"
     f"   - Problem Statement\n"
     f"   - Objectives\n"
-    f"   - Technologies Overview ({frontend}, {backend}, PostgreSQL)\n\n"
+    f"   - Technologies Overview ({studentDetails.frontend}, {studentDetails.backend}, PostgreSQL)\n\n"
     
     f"2. **Project Planning and Requirements**\n"
     f"   - Project Scope and Requirements\n"
-    f"   - Technology Stack Selection (Why {frontend}, {backend})\n"
+    f"   - Technology Stack Selection (Why {studentDetails.frontend}, {studentDetails.backend})\n"
     f"   - User Stories/Use Cases\n\n"
     
     f"3. **System Design and Architecture**\n"
-    f"   - High-Level System Architecture ({frontend}/{backend} interaction, API design)\n"
+    f"   - High-Level System Architecture ({studentDetails.frontend}/{ studentDetails.backend} interaction, API design)\n"
     f"   - Database Design (PostgreSQL schema for inventory tracking)\n"
-    f"   - API Design ({backend} endpoints, RESTful routes)\n\n"
+    f"   - API Design ({ studentDetails.backend} endpoints, RESTful routes)\n\n"
     
     f"4. **Frontend Development**\n"
-    f"   - {frontend}\n"
-    f"   - State Management about {frontend}\n"
+    f"   - { studentDetails.frontend}\n"
+    f"   - State Management about { studentDetails.frontend}\n"
     f"   - User Interface Design and Responsiveness\n"
     f"   - Code Snippets for Frontend Features \n\n"
     
     f"5. **Backend Development**\n"
-    f"   - {backend} Overview ( {backend} details )\n"
+    f"   - { studentDetails.backend} Overview ( { studentDetails.backend} details )\n"
     f"   - Database Interaction\n"
     f"   - API Design and Security (JWT Authentication, API Routes)\n"
     
     
     f"6. **Testing and Quality Assurance**\n"
-    f"   - Testing Strategy (Unit, Integration Testing) in {frontend}{backend}\n"
+    f"   - Testing Strategy (Unit, Integration Testing) in { studentDetails.frontend}{ studentDetails.backend}\n"
     f"   - Tools Used \n"
     f"   - Code Coverage and Bug Fixes\n\n"
     
@@ -211,14 +223,14 @@ def project_report(projectName:str=Form(...),degree:str=Form(...),department:str
     f"Please generate the content for each section in detail, with each subtopic having 300-400 words. "
     f"Ensure that the first page contains only the index with the listed subtopics. "
     f"After the index, generate detailed content for each subtopic, ensuring the report is informative and technical, "
-    f"covering all aspects of the project development cycle, including system design, {backend}, {frontend}, testing, "
+    f"covering all aspects of the project development cycle, including system design, { studentDetails.backend}, { studentDetails.frontend}, testing, "
     f"deployment, and challenges faced."
     )
     final_response = mygemai(prompt)
     doc = Document()
-    doc.add_heading(f'Project Abstract:{projectName}',0)
+    doc.add_heading(f'Project Abstract:{ studentDetails.projectName}',0)
     doc.add_paragraph(final_response.replace("#","").replace("*",""))
     
-    file_path = f"project_abstract_{projectName}.docx"
+    file_path = f"project_abstract_{ studentDetails.projectName}.docx"
     doc.save(file_path)
     return FileResponse(file_path, media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document', filename=file_path)

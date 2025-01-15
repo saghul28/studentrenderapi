@@ -8,26 +8,23 @@ import re
 app = FastAPI()
 router = APIRouter()
 
-# Configure Google GenAI (Remember to set your API key as an environment variable)
+
 genai.configure(api_key=os.getenv("GENAIAPI_KEY"))
 
-# Choose the model
+
 model = genai.GenerativeModel('gemini-1.5-flash')
 
-# Global variables to store generated questions and score
 questions_list = {}
 current_score = 0
 current_question_index = {}
 current_topic = ""
 
-# Models for request data
 class QuestionRequest(BaseModel):
     topic: str
 
 class AnswerRequest(BaseModel):
     answer: str
 
-# Function to generate multiple-choice questions
 def generate_questions(topic):
     """Generates assessment questions for the given topic using Gemini Flash."""
     prompt = (f"Generate 3 multiple-choice questions related to {topic}. "
@@ -45,7 +42,8 @@ def generate_questions(topic):
     chat = model.start_chat(history=[])
     response = chat.send_message(prompt)
     questions = response.text.split("$$")
-    return [q.strip() for q in questions if q.strip()]  # Clean up empty strings
+   
+    return [q.strip() for q in questions if q.strip()]  
 
 def parse_question(question_str):
     """Parses a question string into question text, options, correct answer, and code block."""
@@ -54,19 +52,22 @@ def parse_question(question_str):
     correct_answer = ""
     code_block = ""
 
-  
-    if '```' in question_str:
+    print(question_str)
+    if any(mark in question_str for mark in ['```', '``', '`']):
         code_block_match = re.search(r'```[a-zA-Z]*\n(.*?)```', question_str, re.DOTALL)
+        print(code_block_match)
         if code_block_match:
             code_block = code_block_match.group(1).strip()
             question_str = question_str.replace(code_block_match.group(0), '')
 
-    # Process remaining question text
+   
     question_lines = question_str.split('\n')
     for line in question_lines:
         line = line.strip()
-        if line.startswith('**Question:'):
-            question_text = line.split(':', 1)[1].strip()
+        print("Line",line)
+        if line.startswith(('**Question:', 'Question')):
+            question_text = line.split(":",1)[1].strip()
+            print("QuestionText",question_text)
         elif line.startswith('Options'):
             continue  
         elif line.startswith('A)') or line.startswith('B)') or line.startswith('C)') or line.startswith('D)'):
@@ -78,23 +79,22 @@ def parse_question(question_str):
 
     return question_text, options, correct_answer, code_block
 
-# Function to assess answers using Gemini Flash
+
 def assess_answer(answer, question, code_block):
     """Assesses the student's answer using Gemini Flash."""
     if not question:
         return "Error: Question context is missing."
 
     prompt = (f"Is the following answer correct for the question \"{question}{code_block}\":\n\n{answer}\n\n"
-              "Please provide a reason if the answer is correct or incorrect. Keep it short and precise.")
+              "Please provide a reason if the answer is correct and if the answer is  incorrect provide the correct answer and reason. Keep it short and precise.")
     chat = model.start_chat(history=[])
     response = chat.send_message(prompt)
     return response.text
 
-# Endpoint to generate questions for a topic
 @router.post('/generate_questions')
 async def api_generate_questions(request: QuestionRequest):
     global questions_list, current_score, current_question_index, current_topic
-    current_score = 0  # Reset score for a new session
+    current_score = 0  
     topic = request.topic
 
     if not topic:
@@ -105,10 +105,8 @@ async def api_generate_questions(request: QuestionRequest):
         raise HTTPException(status_code=500, detail="Failed to generate questions")
 
     questions_list[topic] = questions
-    current_question_index[topic] = 0  # Start from the first question
+    current_question_index[topic] = 0  
     current_topic = topic
-
-    # Parse the first question
     question_text, options, correct_answer, code_block = parse_question(questions_list[topic][0])
     
     return JSONResponse(content={
@@ -135,7 +133,7 @@ async def api_next_question():
     if current_question_index[topic] >= len(questions_list[topic]):
         return JSONResponse(content={"message": "No more questions available."})
 
-    # Parse the current question
+    
     current_question_index[topic] +=1
     question_text, options, correct_answer, code_block = parse_question(questions_list[topic][current_question_index[topic]])
     
@@ -145,7 +143,7 @@ async def api_next_question():
         "code_block": code_block
     })
 
-# Endpoint to assess the user's answer and provide feedback
+
 @router.post('/submit_answer')
 async def api_submit_answer(answer_request: AnswerRequest):
     global current_score, current_topic, current_question_index

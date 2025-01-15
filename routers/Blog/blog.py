@@ -1,11 +1,12 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import  datetime
-from firebase_config import firestoreDb
-import datetime
+from firebase_config import pyredb
 
+import datetime
 router = APIRouter()
-store = firestoreDb
+
+store = pyredb
 
 
 class Post(BaseModel):
@@ -17,16 +18,17 @@ class Post(BaseModel):
 @router.post("/posts")
 async def create_post(post: Post):
     try:
-        title = post.title
-        content = post.content
-        date = datetime.datetime.now()
-        author = "Admin"  # Set a default author if no user information is required
-
-        data = {"title": title, "content": content, "author": author}
-        post_id = store.collection("Blogs").document().id  # Auto-generate a blog ID
-        blog_ref = store.collection("Blogs").document(post_id)
-
-        blog_ref.set(data)
+        blog_data = {
+             "title" : post.title,
+        "content" : post.content,
+        "date" : datetime.datetime.now().isoformat(),
+        "author" : "Admin"  
+        }
+        try:
+            store.child("Blogs").push(blog_data)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
+            
         return {"message": "Blog post created successfully"}
     except Exception as e:
         return {"message": f"Error: {e}"}
@@ -36,12 +38,14 @@ async def create_post(post: Post):
 @router.get("/blogs")
 async def get_all_blogs():
     try:
-        blogs_data = []
-        blogs_ref = store.collection("Blogs")
-        query_snapshot = blogs_ref.get()
-        for doc in query_snapshot:
-            blogs_data.append({"id": doc.id, **doc.to_dict()})
+        blogs_ref = store.child("Blogs")  
+        blogs_data = blogs_ref.get().val()
+        if not blogs_data:
+            raise HTTPException(status_code=404,detail="No blog found")
 
+        blog_list = []
+        for blog_id,blog_info in blogs_data.items():
+            blog_list.append({"id":blog_id,**blog_info})
         return {"blogs": blogs_data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
@@ -51,10 +55,10 @@ async def get_all_blogs():
 @router.get("/blogs/{id}")
 async def get_blog_by_id(id: str):
     try:
-        blog_ref = store.collection("Blogs").document(id)
-        doc = blog_ref.get()
-        if doc.exists:
-            return {"blog": doc.to_dict()}
+        blog_ref = store.child("Blogs").child(id)
+        doc = blog_ref.get().val()
+        if doc:
+            return {"blog": doc}
         else:
             raise HTTPException(status_code=404, detail="Blog not found")
     except Exception as e:
@@ -65,8 +69,8 @@ async def get_blog_by_id(id: str):
 @router.delete("/blogs/{id}")
 async def delete_blog(id: str):
     try:
-        blog_ref = store.collection("Blogs").document(id)
-        blog_ref.delete()
+        blog_ref = store.child("Blogs").child(id)
+        blog_ref.remove()
         return {"message": "Blog post deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
@@ -80,7 +84,7 @@ async def update_blog(post: Post, id: str):
             "title": post.title,
             "content": post.content
         }
-        blog_ref = store.collection("Blogs").document(id)
+        blog_ref = store.child("Blogs").child(id)
         blog_ref.update(data)
         return {"message": "Blog post updated successfully"}
     except Exception as e:

@@ -2,3 +2,12 @@
 .env
 .venv
 venv/
+dependencies
+ainanbanserver.pem
+
+student.zip
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

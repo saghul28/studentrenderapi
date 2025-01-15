@@ -19,10 +19,10 @@ async def login(request: LoginRequest):
         raise HTTPException(status_code=400, detail="Email and Password are required")
 
     try:
-        # Sign in user with email and password
+       
         user =pyreFire.sign_in_with_email_and_password(email, password)
        
-        # Get user info
+        
         user_info = pyreFire.get_account_info(user['idToken'])
         id_Token = user['idToken']
         print(user_info)
@@ -61,11 +61,13 @@ class SignUpRequest(BaseModel):
     email: str
     password: str
     phone_number:int
+    location:str
 
 @router.post("/signup")
 async def signup(request: SignUpRequest):
     try:
         user = pyreFire.create_user_with_email_and_password(email=request.email, password=request.password)
+        print(request)
         id_token = user['idToken']
         local_id = user['localId']
         # idtoken = pyreFire.send_email_verification(user['id_token'])
@@ -83,12 +85,13 @@ async def signup(request: SignUpRequest):
         'username':request.username,
         'email': request.email,
         'phone_number': request.phone_number,
+        'location':request.location
     }
     try:
         pyredb.child("users").child(user['localId']).set(user_data)
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=400, detail=str(e))
-
     return {"message": "User created successfully"}
 
 class PasswordResetRequest(BaseModel):
