@@ -230,9 +230,12 @@ def project_report(studentDetails:StudentProjectDetails):
     doc = Document()
     doc.add_heading(f'Project Abstract:{ studentDetails.projectName}',0)
     doc.add_paragraph(final_response.replace("#","").replace("*",""))
-    
+
     file_path = f"project_abstract_{ studentDetails.projectName}.docx"
     doc.save(file_path)
     return FileResponse(file_path, media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document', filename=file_path)
+
+
 @router.post("/generate_ppt")
-def generate_ppt()
+def generate_ppt():
+    return "sample folder"
