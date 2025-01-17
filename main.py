@@ -11,7 +11,7 @@ from routers.course import course_api
 from routers.project import project_api
 from routers.chat import chat
 from routers.ProjectGuidance import project_abstract
-from mangum import Mangum
+
 app = FastAPI(
     title="API Documentation",
     description="API Documentation",
@@ -26,7 +26,7 @@ app = FastAPI(
     },
 )
 
-handler = Mangum(app)
+
 
 app.include_router(user_api.router, prefix="/user", tags=["User"])
 app.include_router(project_api.router, prefix="/project", tags=["Project"])
