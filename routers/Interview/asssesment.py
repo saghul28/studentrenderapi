@@ -5,12 +5,14 @@ import os
 import google.generativeai as genai
 import re
 
+from routers.account.user_api import get_api_key
+
 app = FastAPI()
 router = APIRouter()
 
 
-genai.configure(api_key=os.getenv("GENAIAPI_KEY"))
-
+genai.configure(api_key=get_api_key())
+print(os.getenv("GENAIAPI_KEY"))
 
 model = genai.GenerativeModel('gemini-1.5-flash')
 
@@ -26,6 +28,7 @@ class AnswerRequest(BaseModel):
     answer: str
 
 def generate_questions(topic):
+
     """Generates assessment questions for the given topic using Gemini Flash."""
     prompt = (f"Generate 10 multiple-choice questions related to {topic}. "
               "Provide 4 answer options for each question, with only one correct answer. "
@@ -93,6 +96,7 @@ def assess_answer(answer, question, code_block):
 
 @router.post('/generate_questions')
 async def api_generate_questions(request: QuestionRequest):
+    print(f"get api key i questions{get_api_key()}")
     global questions_list, current_score, current_question_index, current_topic
     current_score = 0  
     topic = request.topic

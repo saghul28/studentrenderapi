@@ -1,4 +1,4 @@
-from fastapi import APIRouter,Form
+from fastapi import APIRouter, Form, HTTPException
 from pydantic import BaseModel
 from docx import Document
 from fastapi.responses import FileResponse,StreamingResponse
@@ -7,18 +7,31 @@ import google.generativeai as genai
 import os
 from dotenv import load_dotenv
 
+from routers.account.user_api import get_api_key
+
 load_dotenv()
+print(f"get_api_key {get_api_key()}")
+
 
 def mygemai(prompt):
     try:
-        client =genai.configure(api_key=os.getenv("GENAIAPI_KEY"))
-        model =genai.GenerativeModel('gemini-1.5-flash')
+        # Configure genai with the API key
+        client = genai.configure(api_key=get_api_key())
+
+        # Create the model instance and start the chat
+        model = genai.GenerativeModel('gemini-1.5-flash')
         chat = model.start_chat()
         response = chat.send_message(prompt)
+
         return response.text.replace("#", "").replace("*", "")
+
     except Exception as e:
+        # Check if the error is related to the API key
+        if "invalid API key" in str(e).lower():
+            return "Error: Invalid API key. Please check your API key."
         return f"Error in generating content: {str(e)}"
-    
+
+
 router = APIRouter() 
 
 class StudentProjectDetails(BaseModel):
@@ -65,17 +78,18 @@ async def generatingAbstrct(studentDetails: StudentProjectDetails):
         f"of the project’s goals, technologies, and future directions."
     )
     final_response = mygemai(prompt)
+    print(final_response)
 
+    if final_response.startswith("Error in generating content"):
+        raise HTTPException(status_code=400, detail="Please login With Your Username and Password")
 
     doc = Document()
     doc.add_heading(f'Project Abstract: {studentDetails.projectName}', level=0)
     doc.add_paragraph(final_response)
 
-   
     file_stream = io.BytesIO()
     doc.save(file_stream)
     file_stream.seek(0)
-
   
     return StreamingResponse(
         file_stream,

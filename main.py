@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 import uvicorn
 from routers.Blog import blog
+from routers.GettingApi import get_api
 from routers.Interview import asssesment
 from routers.Jobs import job_api
 from routers.Report import reportgen
@@ -37,11 +38,12 @@ app.include_router(blog.router, prefix="/blog", tags=["Blog"])
 app.include_router(reportgen.router, prefix="/report", tags=["Reports"])
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
 app.include_router(project_abstract.router, prefix="/projectguidance", tags=['Project Guidance'])
+app.include_router(get_api.router , prefix='/getapi',tags=['Get Api'])
 
 app.add_middleware(SessionMiddleware, secret_key="your_secret_key")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
