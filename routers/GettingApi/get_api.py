@@ -13,7 +13,7 @@ class GetAPIFromUser(BaseModel):
 
 @router.post("/get_api")
 def getapi(apiGet : GetAPIFromUser,uid:str = Depends(get_uid_from_cookie)):
-    print("ssample")
+    print("ssample program")
     return JSONResponse({"uid":uid,"api":apiGet.apiKey})
     
     
