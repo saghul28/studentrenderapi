@@ -6,12 +6,12 @@ from routers.Blog import blog
 from routers.GettingApi import get_api
 from routers.Interview import asssesment
 from routers.Jobs import job_api
-from routers.Report import reportgen
 from routers.account import user_api
 from routers.course import course_api
 from routers.project import project_api
 from routers.chat import chat
 from routers.ProjectGuidance import project_abstract
+from routers.Interview import listening
 
 app = FastAPI(
     title="API Documentation",
@@ -27,7 +27,13 @@ app = FastAPI(
     },
 )
 
-
+origins = [
+    "http://localhost",
+    "http://localhost:5173",
+    "https://ainanban.in",
+    "https://ainanban-nntjvm3ol-altsenses-projects.vercel.app",
+    "https://www.ainanban.in",
+]
 
 app.include_router(user_api.router, prefix="/user", tags=["User"])
 app.include_router(project_api.router, prefix="/project", tags=["Project"])
@@ -35,15 +41,14 @@ app.include_router(asssesment.router, prefix="/interview", tags=["Chatgpt"])
 app.include_router(course_api.router, prefix="/course", tags=["Course"])
 app.include_router(job_api.router, prefix="/job", tags=["Job"])
 app.include_router(blog.router, prefix="/blog", tags=["Blog"])
-app.include_router(reportgen.router, prefix="/report", tags=["Reports"])
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
 app.include_router(project_abstract.router, prefix="/projectguidance", tags=['Project Guidance'])
-app.include_router(get_api.router , prefix='/getapi',tags=['Get Api'])
-
+app.include_router(listening.router,prefix="/voice",tags=["voice"])
 app.add_middleware(SessionMiddleware, secret_key="your_secret_key")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -53,5 +58,6 @@ app.add_middleware(
 def hello():
     return {"message": "hello world"}
 
+
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

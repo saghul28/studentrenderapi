@@ -58,7 +58,7 @@ async def login(request: LoginRequest, response: Response):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-print(api_key_global)
+
 
 class SignUpRequest(BaseModel):
     username:str
@@ -77,7 +77,6 @@ async def signup(request: SignUpRequest):
         id_token = user['idToken']
         uid = user['localId']
         pyreFire.update_profile(id_token, display_name=request.username)
-
         pyredb.child("Users").child(uid).set({"api_key":request.api_key})
 
     except HTTPError as e:
@@ -99,7 +98,6 @@ async def signup(request: SignUpRequest):
     except Exception as e:
         print(e)
         raise HTTPException(status_code=400, detail=str(e))
-
     return {"message": "User created successfully"}
 
 
@@ -141,3 +139,13 @@ def get_uid_from_cookie(request: Request):
     if not uid:
         raise HTTPException(status_code=401, detail="User is not logged in")
     return uid
+
+
+# {
+#   "username": "javeed",
+#   "email": "javeed@gmail.com",
+#   "password": "javeed",
+#   "phone_number": 0,
+#   "location": "string",
+#   "api_key": "AIzaSyBaJInUzY9hvQYVfr2TXUvY5UH7WmzjGsI"
+# }
